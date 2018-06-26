@@ -1,6 +1,6 @@
 ﻿namespace SocketServer
 {
-    partial class ClientForm
+    partial class ServerForm
     {
         /// <summary>
         /// 必需的设计器变量。

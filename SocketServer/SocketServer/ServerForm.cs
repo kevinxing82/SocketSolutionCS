@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace SocketServer
 {
-    public partial class ClientForm : Form
+    public partial class ServerForm : Form
     {
-        public ClientForm()
+        public ServerForm()
         {
             InitializeComponent();
         }
