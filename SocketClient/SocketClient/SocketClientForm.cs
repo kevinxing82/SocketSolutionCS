@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace SocketClient
+namespace org.kevinxing.socket
 {
     public partial class SocketClientForm : Form
     {

@@ -1,4 +1,4 @@
-﻿namespace SocketClient
+﻿namespace org.kevinxing.socket
 {
     partial class SocketClientForm
     {
