@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using org.kevinxing.socket;
 
-namespace ClientUnitTestProject
+namespace org.kevinxing.socket
 {
     [TestClass]
     public class SocketClientUnitTest
@@ -11,6 +11,7 @@ namespace ClientUnitTestProject
         [TestMethod]
         public void TestMethod1()
         {
+
         }
     }
 }
