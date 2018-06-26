@@ -1,8 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using org.kevinxing.socket;
 
-namespace org.kevinxing.socket
+namespace org.kevinxing.socket.test
 {
     [TestClass]
     public class SocketClientUnitTest
