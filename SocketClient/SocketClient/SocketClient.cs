@@ -6,16 +6,23 @@ using System.Threading.Tasks;
 
 namespace org.kevinxing.socket
 {
-    public enum SocketConnectStatus
+    public enum SocketConnectState
     {
         SUCCESS = 0,
         IP_IS_INVALID,
     }
     public class SocketClient
     {
-        public SocketConnectStatus connect(string v1, int v2)
+        public SocketConnectState connect(string ip, int port)
         {
-            return SocketConnectStatus.SUCCESS;
+            if(IsValidIP(ip))
+            {
+                return SocketConnectState.SUCCESS;
+            }
+            else
+            {
+                return SocketConnectState.IP_IS_INVALID;
+            }
         }
 
         public static bool IsValidIP(string v)
