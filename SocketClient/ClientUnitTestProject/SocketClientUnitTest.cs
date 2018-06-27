@@ -6,7 +6,7 @@ namespace org.kevinxing.socket.test
     [TestClass]
     public class SocketClientUnitTest
     {
-        private SocketClient client = new SocketClient();
+        private ChatClient client = new ChatClient();
         [TestMethod]
         public void ConnectServerWithValidValue()
         {
@@ -22,26 +22,26 @@ namespace org.kevinxing.socket.test
         [TestMethod]
         public void CheckValidIPString()
         {
-            Assert.IsTrue(SocketClient.IsValidIP("127.0.0.1"));
+            Assert.IsTrue(ChatClient.IsValidIP("127.0.0.1"));
         }
 
         [TestMethod]
         public void IPStringOutOfRange()
         {
-            Assert.IsFalse(SocketClient.IsValidIP("111.111.111.111.111"));
+            Assert.IsFalse(ChatClient.IsValidIP("111.111.111.111.111"));
         }
 
         [TestMethod]
         public void IPStringNotEnoughLength()
         {
-            Assert.IsFalse(SocketClient.IsValidIP("1"));
+            Assert.IsFalse(ChatClient.IsValidIP("1"));
         }
 
         [TestMethod]
         public void IPStringWithIncorrectFormation()
         {
-            Assert.IsFalse(SocketClient.IsValidIP("12345678"));
-            Assert.IsFalse(SocketClient.IsValidIP("A.B.C.D"));
+            Assert.IsFalse(ChatClient.IsValidIP("12345678"));
+            Assert.IsFalse(ChatClient.IsValidIP("A.B.C.D"));
         }
     }
 }

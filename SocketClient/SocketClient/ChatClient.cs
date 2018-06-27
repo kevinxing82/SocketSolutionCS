@@ -11,7 +11,7 @@ namespace org.kevinxing.socket
         SUCCESS = 0,
         IP_IS_INVALID,
     }
-    public class SocketClient
+    public class ChatClient
     {
         public SocketConnectState connect(string ip, int port)
         {
