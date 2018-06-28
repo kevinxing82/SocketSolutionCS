@@ -12,14 +12,23 @@ namespace org.kevinxing.socket
 {
     public partial class SocketClientForm : Form
     {
+        private ChatClient client;
         public SocketClientForm()
         {
             InitializeComponent();
+            InitClient();
+        }
+
+        private void InitClient()
+        {
+            this.logDelegate = printLog;
+            client = new ChatClient();
+            client.logHandler += log;
         }
 
         private void connectButton_Click(object sender, EventArgs e)
         {
-
+            client.StartClient();
         }
 
         private void disconnectButton_Click(object sender, EventArgs e)
@@ -39,7 +48,7 @@ namespace org.kevinxing.socket
 
         private void sendButton_Click(object sender, EventArgs e)
         {
-
+            client.Send("This is a test<EOF>");
         }
 
         private void ipTextBox_TextChanged(object sender, EventArgs e)
@@ -55,6 +64,16 @@ namespace org.kevinxing.socket
         private void inputTextBox_TextChanged(object sender, EventArgs e)
         {
 
+        }
+        public delegate void LogDelegate(String message);
+        private void printLog(String message)
+        {
+            msgListBox.Items.Add(message);
+        }
+        public LogDelegate logDelegate;
+        private void log(Object sender, LogEventArgs e)
+        {
+            this.Invoke(this.logDelegate, new Object[] { e.Message });
         }
     }
 }

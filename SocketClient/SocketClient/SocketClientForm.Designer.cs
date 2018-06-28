@@ -104,6 +104,7 @@
             // msgListBox
             // 
             this.msgListBox.FormattingEnabled = true;
+            this.msgListBox.HorizontalScrollbar = true;
             this.msgListBox.ItemHeight = 12;
             this.msgListBox.Location = new System.Drawing.Point(12, 79);
             this.msgListBox.Name = "msgListBox";

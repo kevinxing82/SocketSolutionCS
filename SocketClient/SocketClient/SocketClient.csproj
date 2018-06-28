@@ -46,7 +46,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SocketClient.cs" />
+    <Compile Include="ChatClient.cs" />
+    <Compile Include="LogEventArgs.cs" />
     <Compile Include="SocketClientForm.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -17,7 +17,8 @@ namespace org.kevinxing.socket
         const int opsToPreAlloc = 2;    // read, write (don't alloc buffer space for accepts)
         Socket listenSocket;            // the socket used to listen for incoming connection requests
                                         // pool of reusable SocketAsyncEventArgs objects for write, read and accept socket operations
-        SocketAsyncEventArgsPool m_readWritePool;
+        SocketAsyncEventArgsPool m_readPool;
+        SocketAsyncEventArgsPool m_writePool;
         int m_totalBytesRead;           // counter of the total # bytes received by the server
         int m_numConnectedSockets;      // the total number of clients connected to the server 
         Semaphore m_maxNumberAcceptedClients;
@@ -41,7 +42,8 @@ namespace org.kevinxing.socket
             m_bufferManager = new BufferManager(receiveBufferSize * numConnections * opsToPreAlloc,
                 receiveBufferSize);
 
-            m_readWritePool = new SocketAsyncEventArgsPool(numConnections);
+            m_readPool = new SocketAsyncEventArgsPool(numConnections);
+            m_writePool = new SocketAsyncEventArgsPool(numConnections);
             m_maxNumberAcceptedClients = new Semaphore(numConnections, numConnections);
         }
 
@@ -69,7 +71,7 @@ namespace org.kevinxing.socket
                 // assign a byte buffer from the buffer pool to the SocketAsyncEventArg object
                 m_bufferManager.SetBuffer(readEventArg);
                 // add SocketAsyncEventArg to the pool
-                m_readWritePool.Push(readEventArg);
+                m_readPool.Push(readEventArg);
 
 
                 //Pre-allocate a set of reusable SocketAsyncEventArgs
@@ -79,7 +81,7 @@ namespace org.kevinxing.socket
                 // assign a byte buffer from the buffer pool to the SocketAsyncEventArg object
                 m_bufferManager.SetBuffer(writeEventArg);
                 // add SocketAsyncEventArg to the pool
-                m_readWritePool.Push(writeEventArg);
+                m_writePool.Push(writeEventArg);
             }
         }
 
@@ -90,17 +92,27 @@ namespace org.kevinxing.socket
         // for connection requests on</param>
         public void Start(IPEndPoint localEndPoint)
         {
-            log("==================");
-            log("Server Start");
-            log("==================");
             // create the socket which listens for incoming connections
-            listenSocket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                listenSocket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             listenSocket.Bind(localEndPoint);
             // start the server with a listen backlog of 100 connections
             listenSocket.Listen(100);
+                log("==================");
+                log(String.Format("Server Start  ip:{0} port:{1}",
+                    localEndPoint.Address.MapToIPv4().ToString(),
+                    localEndPoint.Port));
+                log("==================");
 
-            // post accepts on the listening socket
-            StartAccept(null);
+                // post accepts on the listening socket
+                StartAccept(null);
+            }
+            catch (Exception e)
+            {
+                log(e.ToString());
+            }
+            
 
             //Console.WriteLine("{0} connected sockets with one outstanding receive posted to each....press any key", m_outstandingReadCount);
            // Console.WriteLine("Press any key to terminate the server process....");
@@ -149,7 +161,7 @@ namespace org.kevinxing.socket
 
             // Get the socket for the accepted client connection and put it into the 
             //ReadEventArg object user token
-            SocketAsyncEventArgs readEventArgs = m_readWritePool.Pop();
+            SocketAsyncEventArgs readEventArgs = m_readPool.Pop();
             ((AsyncUserToken)readEventArgs.UserToken).Socket = e.AcceptSocket;
 
             // As soon as the client is connected, post a receive to the connection
@@ -191,11 +203,11 @@ namespace org.kevinxing.socket
 
                 //echo the data received back to the client
                 e.SetBuffer(e.Offset, e.BytesTransferred);
-                bool willRaiseEvent = token.Socket.SendAsync(e);
-                if (!willRaiseEvent)
-                {
-                    ProcessSend(e);
-                }
+                //bool willRaiseEvent = token.Socket.SendAsync(e);
+                //if (!willRaiseEvent)
+                //{
+                //    ProcessSend(e);
+                //}
             }
             else
             {
@@ -246,7 +258,7 @@ namespace org.kevinxing.socket
             log(String.Format("A client has been disconnected from the server. There are {0} clients connected to the server", m_numConnectedSockets));
 
             // Free the SocketAsyncEventArg so they can be reused by another client
-            m_readWritePool.Push(e);
+            m_writePool.Push(e);
         }
 
         private void log(String msg)
