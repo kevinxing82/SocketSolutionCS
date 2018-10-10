@@ -21,7 +21,6 @@ namespace org.kevinxing.socket
         ISessionEventDispatcher _dipatcher;
         SocketConfiguration _configuration;
 
-
         private readonly ConcurrentDictionary<String, ChatSession> _sessions = new ConcurrentDictionary<string, ChatSession>();
 
         public event EventHandler<LogEventArgs> logHandler;
@@ -47,7 +46,7 @@ namespace org.kevinxing.socket
                     }
                     catch(Exception ex)
                     {
-                        //log
+                        log(ex.ToString());
                     }
                 }).Initialize(512);
 

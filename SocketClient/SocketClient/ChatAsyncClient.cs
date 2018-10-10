@@ -88,8 +88,7 @@ namespace org.kevinxing.socket
                             {
                                 //dispatch payload
                                 Array.Copy(payload, payloadOffset, payload, 0,payloadCount);
-                                string recStr = System.Text.Encoding.UTF8.GetString(payload);
-                                log(recStr);
+                                log(System.Text.Encoding.UTF8.GetString(payload));
                                 //await _dispatcher.OnSessionReceive(this, payload, payloadOffset, payloadCount);
                             }
                             catch (Exception ex)
@@ -119,7 +118,7 @@ namespace org.kevinxing.socket
             }
             finally
             {
-                //close
+                client.Close();
             }
         }
         public async Task SendAsync(String data)
@@ -164,8 +163,4 @@ namespace org.kevinxing.socket
             }
         }
     }
-
-
-
-    
 }

@@ -48,5 +48,10 @@ namespace org.kevinxing.socket
         {
             this.Invoke(this.logDelegate, new Object[] { e.Message });
         }
+
+        private void stopButton_Click(object sender, EventArgs e)
+        {
+            server.Shutdown();
+        }
     }
 }
