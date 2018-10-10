@@ -87,7 +87,9 @@ namespace org.kevinxing.socket
                             try
                             {
                                 //dispatch payload
-                                log(System.Text.Encoding.ASCII.GetString(payload));
+                                Array.Copy(payload, payloadOffset, payload, 0,payloadCount);
+                                string recStr = System.Text.Encoding.UTF8.GetString(payload);
+                                log(recStr);
                                 //await _dispatcher.OnSessionReceive(this, payload, payloadOffset, payloadCount);
                             }
                             catch (Exception ex)
@@ -122,7 +124,7 @@ namespace org.kevinxing.socket
         }
         public async Task SendAsync(String data)
         {
-            byte[] bArr = System.Text.Encoding.ASCII.GetBytes(data);
+            byte[] bArr = System.Text.Encoding.UTF8.GetBytes(data);
             byte[] frameArr;
             int frameOffset;
             int frameLength;
