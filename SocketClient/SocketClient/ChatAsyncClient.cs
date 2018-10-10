@@ -16,7 +16,9 @@ namespace org.kevinxing.socket
         public event EventHandler<LogEventArgs> logHandler;
 
         private SocketConfiguration config;
-        private ArraySegment<byte> receiveBuffer; 
+        private ArraySegment<byte> receiveBuffer;
+        private ArraySegment<byte> dataBuffer;
+        private int dataBufferOffset = 0;
         public async Task StartClientAsync()
         {
             try
@@ -27,6 +29,7 @@ namespace org.kevinxing.socket
 
                 config = new SocketConfiguration();
                 receiveBuffer = new ArraySegment<byte>(new byte[config.ReceiveBufferSize]);
+                dataBuffer = new ArraySegment<byte>(new byte[config.ReceiveBufferSize * 2]);
                 client = new Socket(ipAddress.AddressFamily,
                     SocketType.Stream, ProtocolType.Tcp);
                  await client.ConnectAsync(remoteEP);
@@ -49,11 +52,62 @@ namespace org.kevinxing.socket
         {
             try
             {
-                while(client.Connected)
-                {
-                    int receiveCount = await client.ReceiveAsync(receiveBuffer, SocketFlags.None);
+                int frameLength;
+                byte[] payload;
+                int payloadOffset;
+                int payloadCount;
+                int consumLength = 0;
 
+                while (client.Connected)
+                {
                     //decode
+                    consumLength = 0;
+                    int receiveCount = await client.ReceiveAsync(receiveBuffer, SocketFlags.None);
+                    if (receiveCount == 0)
+                    {
+                        break;
+                    }
+
+                    //copy buffer
+                    Array.Copy(receiveBuffer.Array, receiveBuffer.Offset,
+                        dataBuffer.Array, dataBufferOffset, receiveCount);
+                    while (true)
+                    {
+                        frameLength = 0;
+                        payload = null;
+                        payloadOffset = 0;
+                        payloadCount = 0;
+
+                        if (config.FrameBuilder.Decoder.TryDecodeFrame(
+                            dataBuffer.Array,
+                            dataBuffer.Offset + consumLength,
+                            dataBufferOffset + receiveCount - consumLength,
+                            out frameLength, out payload, out payloadOffset, out payloadCount))
+                        {
+                            try
+                            {
+                                //dispatch payload
+                                log(System.Text.Encoding.ASCII.GetString(payload));
+                                //await _dispatcher.OnSessionReceive(this, payload, payloadOffset, payloadCount);
+                            }
+                            catch (Exception ex)
+                            {
+                                log(ex.ToString());
+                            }
+                            finally
+                            {
+                                consumLength += frameLength;
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    //shift buffer
+                    int lastLength = dataBufferOffset + receiveCount - consumLength;
+                    Array.Copy(dataBuffer.Array, consumLength, dataBuffer.Array, 0, lastLength);
+                    dataBufferOffset = lastLength;
 
                 }
             }

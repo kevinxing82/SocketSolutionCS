@@ -162,6 +162,7 @@ namespace org.kevinxing.socket
 
                 while(State == TcpSocketConnectionState.Connected)
                 {
+                    consumLength = 0;
                     int receiveCount = await _socket.ReceiveAsync(_receiveBuffer, SocketFlags.None);
                     if (receiveCount == 0)
                     {
@@ -320,7 +321,11 @@ namespace org.kevinxing.socket
         #region Send
         public async Task SendAsync(byte[] data)
         {
-            await SendAsync(data, 0, data.Length);
+            byte[] frameBuffer;
+            int frameOffset;
+            int frameLength;
+            _configuration.FrameBuilder.Encoder.EncodeFrame(data, 0, data.Length, out frameBuffer, out frameOffset, out frameLength);
+            await SendAsync(frameBuffer, frameOffset, frameLength);
         }
         public async Task SendAsync(byte[] data,int offset,int count)
         {
@@ -333,7 +338,7 @@ namespace org.kevinxing.socket
 
             try
             {
-                await _socket.SendAsync(_sendBuffer, SocketFlags.None);
+                await _socket.SendAsync( new ArraySegment<byte>(data), SocketFlags.None);
             }
             catch(Exception ex)
             {

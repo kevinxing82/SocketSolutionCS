@@ -34,6 +34,9 @@ namespace org.kevinxing.socket
         public Task OnSessionStarted(ChatSession session)
         {
             log(string.Format("TCP session {0} has connected {1}.", session.RemoteEndPoint, session));
+            String helloWord = "Welcome to SAO~~~~!";
+            byte[] buffer = System.Text.Encoding.ASCII.GetBytes(helloWord);
+            session.SendAsync(buffer);
             return Task.CompletedTask;
         }
 
