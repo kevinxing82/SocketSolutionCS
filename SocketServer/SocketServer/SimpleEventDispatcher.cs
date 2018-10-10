@@ -12,7 +12,7 @@ namespace org.kevinxing.socket
         public event EventHandler<LogEventArgs> logHandler;
         public Task OnSessionClosed(ChatSession session)
         {
-            log(string.Format("TCP session {0} has connected {1}.", session.RemoteEndPoint, session));
+            log(string.Format("TCP session {0} has disconnected.", session));
             return  Task.CompletedTask;
         }
 
@@ -33,7 +33,7 @@ namespace org.kevinxing.socket
 
         public Task OnSessionStarted(ChatSession session)
         {
-            log(string.Format("TCP session {0} has disconnected.", session));
+            log(string.Format("TCP session {0} has connected {1}.", session.RemoteEndPoint, session));
             return Task.CompletedTask;
         }
 
