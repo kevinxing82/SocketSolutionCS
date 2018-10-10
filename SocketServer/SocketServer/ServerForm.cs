@@ -25,7 +25,9 @@ namespace org.kevinxing.socket
         private void InitServer()
         {
             this.logDelegate = printLog;
-            server = new ChatServer(100, 1024);
+            SimpleEventDispatcher dispatcher = new SimpleEventDispatcher();
+            dispatcher.logHandler += log;
+            server = new ChatServer(new SocketConfiguration(), dispatcher);
             server.Init();
             server.logHandler += log;
         }

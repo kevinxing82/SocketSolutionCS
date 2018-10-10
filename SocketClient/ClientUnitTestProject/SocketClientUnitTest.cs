@@ -10,13 +10,13 @@ namespace org.kevinxing.socket.test
         //[TestMethod]
         public void ConnectServerWithValidValue()
         {
-            Assert.AreEqual(SocketConnectState.SUCCESS, client.connect("127.0.0.1",13000));                                                              
+            //Assert.AreEqual(SocketConnectState.SUCCESS, client.connect("127.0.0.1",13000));                                                              
         }
 
         //[TestMethod]
         public void ConnectServerWithInvalidIP()
         {
-             Assert.AreEqual(SocketConnectState.IP_IS_INVALID, client.connect("1", 13000));
+             //Assert.AreEqual(SocketConnectState.IP_IS_INVALID, client.connect("1", 13000));
         }
 
        // [TestMethod]

@@ -88,7 +88,7 @@
             this.connectButton.TabIndex = 4;
             this.connectButton.Text = "连接服务器";
             this.connectButton.UseVisualStyleBackColor = true;
-            this.connectButton.Click += new System.EventHandler(this.connectButton_Click);
+            this.connectButton.Click += new System.EventHandler(this.connectButton_ClickAsync);
             // 
             // disconnectButton
             // 

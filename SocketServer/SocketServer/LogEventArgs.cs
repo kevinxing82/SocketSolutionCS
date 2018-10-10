@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace org.kevinxing.socket
 {
-    class LogEventArgs : EventArgs
+    public class LogEventArgs : EventArgs
     {
         private readonly String m_msg;
         public LogEventArgs(String msg)

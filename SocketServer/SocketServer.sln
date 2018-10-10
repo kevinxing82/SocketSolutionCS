@@ -1,11 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2041
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketServer", "SocketServer\SocketServer.csproj", "{65F18AA0-1709-4679-AC13-DACDD6B8B32E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8B0D46B1-1132-431A-803D-D804AD681CF6} = {8B0D46B1-1132-431A-803D-D804AD681CF6}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketServerUnitTest", "UnitTestProject\SocketServerUnitTest.csproj", "{548063D7-E62F-4DED-A8AC-BD1594716837}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketFrame", "..\SocketFrame\SocketFrame.csproj", "{8B0D46B1-1132-431A-803D-D804AD681CF6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,8 +26,15 @@ Global
 		{548063D7-E62F-4DED-A8AC-BD1594716837}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{548063D7-E62F-4DED-A8AC-BD1594716837}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{548063D7-E62F-4DED-A8AC-BD1594716837}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B0D46B1-1132-431A-803D-D804AD681CF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B0D46B1-1132-431A-803D-D804AD681CF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B0D46B1-1132-431A-803D-D804AD681CF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B0D46B1-1132-431A-803D-D804AD681CF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CFAE792B-0D69-41C4-9824-0FE3A68E45DA}
 	EndGlobalSection
 EndGlobal

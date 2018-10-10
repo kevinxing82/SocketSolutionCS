@@ -12,7 +12,7 @@ namespace org.kevinxing.socket
 {
     public partial class SocketClientForm : Form
     {
-        private ChatClient client;
+        private ChatAsyncClient client;
         public SocketClientForm()
         {
             InitializeComponent();
@@ -22,13 +22,13 @@ namespace org.kevinxing.socket
         private void InitClient()
         {
             this.logDelegate = printLog;
-            client = new ChatClient();
+            client = new ChatAsyncClient();
             client.logHandler += log;
         }
 
-        private void connectButton_Click(object sender, EventArgs e)
+        private  void connectButton_ClickAsync(object sender, EventArgs e)
         {
-            client.StartClient();
+            client.StartClientAsync();
         }
 
         private void disconnectButton_Click(object sender, EventArgs e)
@@ -48,7 +48,7 @@ namespace org.kevinxing.socket
 
         private void sendButton_Click(object sender, EventArgs e)
         {
-            client.Send("This is a test<EOF>");
+            client.SendAsync("This is a test<EOF>");
         }
 
         private void ipTextBox_TextChanged(object sender, EventArgs e)

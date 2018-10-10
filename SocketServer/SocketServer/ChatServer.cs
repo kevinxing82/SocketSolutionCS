@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -9,262 +11,271 @@ using System.Threading.Tasks;
 
 namespace org.kevinxing.socket                                    
 {
-    class ChatServer
+    public class ChatServer:IDisposable
     {
-        private int m_numConnections;   // the maximum number of connections the sample is designed to handle simultaneously 
-        private int m_receiveBufferSize;// buffer size to use for each socket I/O operation 
         BufferManager m_bufferManager;  // represents a large reusable set of buffers for all socket operations
         const int opsToPreAlloc = 2;    // read, write (don't alloc buffer space for accepts)
-        Socket listenSocket;            // the socket used to listen for incoming connection requests
-                                        // pool of reusable SocketAsyncEventArgs objects for write, read and accept socket operations
-        SocketAsyncEventArgsPool m_readPool;
-        SocketAsyncEventArgsPool m_writePool;
-        int m_totalBytesRead;           // counter of the total # bytes received by the server
-        int m_numConnectedSockets;      // the total number of clients connected to the server 
-        Semaphore m_maxNumberAcceptedClients;
+        Socket listenSocket;                 // the socket used to listen for incoming connection requests
+                                                         // pool of reusable SocketAsyncEventArgs objects for write, read and accept socket operations
+        SessionPool m_sessionPool;
+        ISessionEventDispatcher _dipatcher;
+        SocketConfiguration _configuration;
+
+
+        private readonly ConcurrentDictionary<String, ChatSession> _sessions = new ConcurrentDictionary<string, ChatSession>();
 
         public event EventHandler<LogEventArgs> logHandler;
 
-        // Create an uninitialized server instance.  
-        // To start the server listening for connection requests
-        // call the Init method followed by Start method 
-        //
-        // <param name="numConnections">the maximum number of connections the sample is designed to handle simultaneously</param>
-        // <param name="receiveBufferSize">buffer size to use for each socket I/O operation</param>
-        public ChatServer(int numConnections, int receiveBufferSize)
+        public ChatServer(SocketConfiguration cnfg,ISessionEventDispatcher dispatcher)
         {
-            m_totalBytesRead = 0;
-            m_numConnectedSockets = 0;
-            m_numConnections = numConnections;
-            m_receiveBufferSize = receiveBufferSize;
-            // allocate buffers such that the maximum number of sockets can have one outstanding read and 
-            //write posted to the socket simultaneously  
-            m_bufferManager = new BufferManager(receiveBufferSize * numConnections * opsToPreAlloc,
-                receiveBufferSize);
-
-            m_readPool = new SocketAsyncEventArgsPool(numConnections);
-            m_writePool = new SocketAsyncEventArgsPool(numConnections);
-            m_maxNumberAcceptedClients = new Semaphore(numConnections, numConnections);
+            _configuration = cnfg;
+            _dipatcher = dispatcher;
         }
 
-        // Initializes the server by preallocating reusable buffers and 
-        // context objects.  These objects do not need to be preallocated 
-        // or reused, but it is done this way to illustrate how the API can 
-        // easily be used to create reusable objects to increase server performance.
-        //
         public void Init()
         {
-            // Allocates one large byte buffer which all I/O operations use a piece of.  This gaurds 
-            // against memory fragmentation
-            m_bufferManager.InitBuffer();
+            m_sessionPool = new SessionPool(
+                () =>
+                {
+                    ChatSession session= new ChatSession(_configuration,_dipatcher, this);
+                    return session;
+                },(session)=>
+                {
+                    try
+                    {
+                        session.Detach();
+                    }
+                    catch(Exception ex)
+                    {
+                        //log
+                    }
+                }).Initialize(512);
 
-            // preallocate pool of SocketAsyncEventArgs objects
-            SocketAsyncEventArgs readEventArg;
-            SocketAsyncEventArgs writeEventArg;
-
-            for (int i = 0; i < m_numConnections; i++)
-            {
-                //Pre-allocate a set of reusable SocketAsyncEventArgs
-                readEventArg = new SocketAsyncEventArgs();
-                readEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(read_Completed);
-                readEventArg.UserToken = new AsyncUserToken();         
-                // assign a byte buffer from the buffer pool to the SocketAsyncEventArg object
-                m_bufferManager.SetBuffer(readEventArg);
-                // add SocketAsyncEventArg to the pool
-                m_readPool.Push(readEventArg);
-
-
-                //Pre-allocate a set of reusable SocketAsyncEventArgs
-                writeEventArg = new SocketAsyncEventArgs();
-                writeEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(write_Completed);
-                writeEventArg.UserToken = new AsyncUserToken();
-                // assign a byte buffer from the buffer pool to the SocketAsyncEventArg object
-                m_bufferManager.SetBuffer(writeEventArg);
-                // add SocketAsyncEventArg to the pool
-                m_writePool.Push(writeEventArg);
-            }
         }
 
-        // Starts the server such that it is listening for 
-        // incoming connection requests.    
-        //
-        // <param name="localEndPoint">The endpoint which the server will listening 
-        // for connection requests on</param>
         public void Start(IPEndPoint localEndPoint)
         {
-            // create the socket which listens for incoming connections
             try
             {
                 listenSocket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            listenSocket.Bind(localEndPoint);
-            // start the server with a listen backlog of 100 connections
-            listenSocket.Listen(100);
-                log("==================");
+                listenSocket.Bind(localEndPoint);
+                listenSocket.Listen(100);
+                log("====================================");
                 log(String.Format("Server Start  ip:{0} port:{1}",
                     localEndPoint.Address.MapToIPv4().ToString(),
                     localEndPoint.Port));
-                log("==================");
-
+                log("====================================");
                 // post accepts on the listening socket
-                StartAccept(null);
+                Task.Factory.StartNew(async () =>
+                {
+                    await StartAccept();
+                },
+                TaskCreationOptions.LongRunning);
             }
-            catch (Exception e)
+            catch (Exception e) when (!ShouldThrow(e))
             {
                 log(e.ToString());
             }
-            
-
-            //Console.WriteLine("{0} connected sockets with one outstanding receive posted to each....press any key", m_outstandingReadCount);
-           // Console.WriteLine("Press any key to terminate the server process....");
-           // Console.ReadKey();
         }
 
-
-        // Begins an operation to accept a connection request from the client 
-        //
-        // <param name="acceptEventArg">The context object to use when issuing 
-        // the accept operation on the server's listening socket</param>
-        public void StartAccept(SocketAsyncEventArgs acceptEventArg)
+        public void Shutdown()
         {
-            if (acceptEventArg == null)
-            {
-                acceptEventArg = new SocketAsyncEventArgs();
-                acceptEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(AcceptEventArg_Completed);
-            }
-            else
-            {
-                // socket must be cleared since the context object is being reused
-                acceptEventArg.AcceptSocket = null;
-            }
-
-            m_maxNumberAcceptedClients.WaitOne();
-            bool willRaiseEvent = listenSocket.AcceptAsync(acceptEventArg);
-            if (!willRaiseEvent)
-            {
-                ProcessAccept(acceptEventArg);
-            }
-        }
-
-        // This method is the callback method associated with Socket.AcceptAsync 
-        // operations and is invoked when an accept operation is complete
-        //
-        void AcceptEventArg_Completed(object sender, SocketAsyncEventArgs e)
-        {
-            ProcessAccept(e);
-        }
-
-        private void ProcessAccept(SocketAsyncEventArgs e)
-        {
-            Interlocked.Increment(ref m_numConnectedSockets);
-            log(String.Format("Client connection accepted. There are {0} clients connected to the server",
-                m_numConnectedSockets));
-
-            // Get the socket for the accepted client connection and put it into the 
-            //ReadEventArg object user token
-            SocketAsyncEventArgs readEventArgs = m_readPool.Pop();
-            ((AsyncUserToken)readEventArgs.UserToken).Socket = e.AcceptSocket;
-
-            // As soon as the client is connected, post a receive to the connection
-            bool willRaiseEvent = e.AcceptSocket.ReceiveAsync(readEventArgs);
-            if (!willRaiseEvent)
-            {
-                ProcessReceive(readEventArgs);
-            }
-
-            // Accept the next connection request
-            StartAccept(e);
-        }
-
-        // This method is called whenever a receive or send operation is completed on a socket 
-        //
-        // <param name="e">SocketAsyncEventArg associated with the completed receive operation</param>
-        void read_Completed(object sender, SocketAsyncEventArgs e)
-        {
-            ProcessReceive(e);
-        }
-        void write_Completed(object sender, SocketAsyncEventArgs e)
-        {
-            ProcessSend(e);
-        }
-
-        // This method is invoked when an asynchronous receive operation completes. 
-        // If the remote host closed the connection, then the socket is closed.  
-        // If data was received then the data is echoed back to the client.
-        //
-        private void ProcessReceive(SocketAsyncEventArgs e)
-        {
-            // check if the remote host closed the connection
-            AsyncUserToken token = (AsyncUserToken)e.UserToken;
-            if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
-            {
-                //increment the count of the total bytes receive by the server
-                Interlocked.Add(ref m_totalBytesRead, e.BytesTransferred);
-                log(String.Format("The server has read a total of {0} bytes", m_totalBytesRead));
-
-                //echo the data received back to the client
-                e.SetBuffer(e.Offset, e.BytesTransferred);
-                //bool willRaiseEvent = token.Socket.SendAsync(e);
-                //if (!willRaiseEvent)
-                //{
-                //    ProcessSend(e);
-                //}
-            }
-            else
-            {
-                CloseClientSocket(e);
-            }
-        }
-
-        // This method is invoked when an asynchronous send operation completes.  
-        // The method issues another receive on the socket to read any additional 
-        // data sent from the client
-        //
-        // <param name="e"></param>
-        private void ProcessSend(SocketAsyncEventArgs e)
-        {
-            if (e.SocketError == SocketError.Success)
-            {
-                // done echoing data back to the client
-                AsyncUserToken token = (AsyncUserToken)e.UserToken;
-                // read the next block of data send from the client
-                bool willRaiseEvent = token.Socket.ReceiveAsync(e);
-                if (!willRaiseEvent)
-                {
-                    ProcessReceive(e);
-                }
-            }
-            else
-            {
-                CloseClientSocket(e);
-            }
-        }
-
-        private void CloseClientSocket(SocketAsyncEventArgs e)
-        {
-            AsyncUserToken token = e.UserToken as AsyncUserToken;
-
-            // close the socket associated with the client
             try
             {
-                token.Socket.Shutdown(SocketShutdown.Send);
+                listenSocket.Close(0);
+                listenSocket = null;
+
+                Task.Factory.StartNew(async () =>
+                {
+                    try
+                    {
+                        foreach(ChatSession session in _sessions.Values)
+                        {
+                            await session.Close();
+                        }
+                    }
+                    catch (Exception ex) when (!ShouldThrow(ex)) { }
+                }, TaskCreationOptions.PreferFairness).Wait();
             }
-            // throws if client process has already closed
-            catch (Exception) { }
-            token.Socket.Close();
-
-            // decrement the counter keeping track of the total number of clients connected to the server
-            Interlocked.Decrement(ref m_numConnectedSockets);
-            m_maxNumberAcceptedClients.Release();
-            log(String.Format("A client has been disconnected from the server. There are {0} clients connected to the server", m_numConnectedSockets));
-
-            // Free the SocketAsyncEventArg so they can be reused by another client
-            m_writePool.Push(e);
+            catch (Exception ex) when (!ShouldThrow(ex)) { }
         }
 
+        private void SetSocketOptions()
+        {
+            listenSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+        }
+
+        private async Task StartAccept()
+        {
+            try
+            {
+                while(true)
+                {
+                    Socket acceptSocket = await listenSocket.AcceptAsync();
+                    await ProcessAccept(acceptSocket);
+                }
+            }
+            catch (Exception ex) when (!ShouldThrow(ex)) { }
+            catch (Exception ex)
+            {
+                log(ex.Message);
+            }
+        }
+
+        private async Task ProcessAccept(Socket socket)
+        {
+            ChatSession session = m_sessionPool.Take();
+            session.Attach(socket);
+            if(_sessions.TryAdd(session.SessionKey,session))
+            {
+                log(String.Format("New session[{0}]", session));
+                try
+                {
+                    await session.Start();
+                }
+                finally
+                {
+                    ChatSession recycle;
+                    if(_sessions.TryRemove(session.SessionKey,out recycle))
+                    {
+                        log(String.Format("Close session[{0}].", recycle));
+                    }
+                }
+            }
+            m_sessionPool.Return(session);
+        }
+
+        #region  Send
+        public async Task SendToAsync(String sessionKey,byte[] data)
+        {
+            await SendToAsync(sessionKey, data, 0, data.Length);
+        }
+
+        public async Task SendToAsync(String sessionKey,byte[] data,int offset,int count)
+        {
+            ChatSession sessionFound;
+            if(_sessions.TryGetValue(sessionKey,out sessionFound))
+            {
+                await sessionFound.SendAsync(data, offset, count);
+            }
+            else
+            {
+                log(String.Format("Cannot find session[{0}].", sessionKey));
+            }
+        }
+
+        public async Task SendToAsync(ChatSession session,byte[] data)
+        {
+            await SendToAsync(session, data, 0, data.Length);
+        }
+
+        public async Task SendToAsync(ChatSession session,byte[] data,int offset,int count)
+        {
+            ChatSession sessionFound;
+            if (_sessions.TryGetValue(session.SessionKey, out sessionFound))
+            {
+                await sessionFound.SendAsync(data, offset, count);
+            }
+            else
+            {
+                log(String.Format("Cannot find session[{0}].", session));
+            }
+        }
+
+        public async Task BroadcastAsync(byte[] data)
+        {
+            await BroadcastAsync(data, 0, data.Length);
+        }
+
+        public async Task BroadcastAsync(byte[] data,int offset,int count)
+        {
+            foreach(ChatSession session in _sessions.Values)
+            {
+                await session.SendAsync(data, offset, count);
+            }
+        }
+        #endregion
+
+        #region Session
+        public bool HasSession(String sessionKey)
+        {
+            return _sessions.ContainsKey(sessionKey);
+        }
+
+        public ChatSession GetSession(String sessionKey)
+        {
+            ChatSession session = null;
+            _sessions.TryGetValue(sessionKey, out session);
+            return session;
+        }
+
+        public async Task  CloseSession(String sessionKey)
+        {
+            ChatSession session = null;
+            if(_sessions.TryGetValue(sessionKey,out session))
+            {
+                await session.Close();
+            }
+        }
+        #endregion
+
+        private bool ShouldThrow(Exception ex)
+        {
+            if (ex is ObjectDisposedException
+               || ex is InvalidOperationException
+               || ex is SocketException
+               || ex is IOException)
+            {
+                return false;
+            }
+            return true;
+        }
         private void log(String msg)
         {
             EventHandler<LogEventArgs> tmp = Volatile.Read(ref logHandler);
             if (tmp != null) tmp(this, new LogEventArgs(msg));
         }
+
+        #region IDisposable Support
+        private readonly object _disposeLock = new object();
+        private bool disposedValue = false; // 要检测冗余调用
+
+        protected virtual void Dispose(bool disposing)
+        {
+            lock(_disposeLock)
+            {
+                if(disposedValue)
+                {
+                    return;
+                }
+
+                if (disposing)
+                {
+                     try
+                    {
+                        if(listenSocket != null)
+                        {
+                            listenSocket.Dispose();
+                        }
+                        if(m_sessionPool!=null)
+                        {
+                            m_sessionPool.Dispose();
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        log(ex.Message);
+                    }
+                }
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+             Dispose(true);
+             GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }
