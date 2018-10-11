@@ -46,7 +46,7 @@ namespace org.kevinxing.socket
 
         private void log(Object sender,LogEventArgs e)
         {
-            this.Invoke(this.logDelegate, new Object[] { e.Message });
+            this.BeginInvoke(this.logDelegate, new object[] { e.Message });
         }
 
         private void stopButton_Click(object sender, EventArgs e)

@@ -73,7 +73,7 @@ namespace org.kevinxing.socket
         public LogDelegate logDelegate;
         private void log(Object sender, LogEventArgs e)
         {
-            this.Invoke(this.logDelegate, new Object[] { e.Message });
+            this.BeginInvoke(this.logDelegate, new Object[] { e.Message });
         }
     }
 }

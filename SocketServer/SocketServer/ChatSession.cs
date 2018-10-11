@@ -238,7 +238,8 @@ namespace org.kevinxing.socket
             {
                 try
                 {
-                     //onSessionClosed
+                    //onSessionClosed
+                    await _dispatcher.OnSessionClosed(this);
                 }
                 catch(Exception ex)
                 {
@@ -306,6 +307,7 @@ namespace org.kevinxing.socket
                 || ex is ArgumentException)
             {
                 //log
+                Console.WriteLine(ex.ToString());
                 await Close();
                 return true;
             }

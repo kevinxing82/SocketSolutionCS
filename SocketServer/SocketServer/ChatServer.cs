@@ -81,22 +81,31 @@ namespace org.kevinxing.socket
         {
             try
             {
+                log("====================================");
+                log("Server Close");
+                log("====================================");
+
                 listenSocket.Close(0);
                 listenSocket = null;
 
-                Task.Factory.StartNew(async () =>
+                Task.Factory.StartNew(async () => 
                 {
                     try
                     {
-                        foreach(ChatSession session in _sessions.Values)
+                        foreach (ChatSession session in _sessions.Values)
                         {
                             await session.Close();
                         }
                     }
-                    catch (Exception ex) when (!ShouldThrow(ex)) { }
+                    catch (Exception ex) when (!ShouldThrow(ex))
+                    {
+                        log(ex.ToString());
+                    }
                 }, TaskCreationOptions.PreferFairness).Wait();
             }
-            catch (Exception ex) when (!ShouldThrow(ex)) { }
+            catch (Exception ex) when (!ShouldThrow(ex)) {
+                log(ex.ToString());
+            }
         }
 
         private void SetSocketOptions()
@@ -127,9 +136,9 @@ namespace org.kevinxing.socket
             session.Attach(socket);
             if(_sessions.TryAdd(session.SessionKey,session))
             {
-                log(String.Format("New session[{0}]", session));
                 try
                 {
+                    log(String.Format("New session[{0}]", session));
                     await session.Start();
                 }
                 finally
