@@ -29,12 +29,12 @@ namespace org.kevinxing.socket
         private  void connectButton_ClickAsync(object sender, EventArgs e)
         {
             
-            client.StartClientAsync(ipTextBox.Text, int.Parse(portTextBox.Text));
+            client.ConnectAsync(ipTextBox.Text, int.Parse(portTextBox.Text));
         }
 
         private void disconnectButton_Click(object sender, EventArgs e)
         {
-
+            client.Disconnect();
         }
 
         private void sendRandomMsgButton_Click(object sender, EventArgs e)

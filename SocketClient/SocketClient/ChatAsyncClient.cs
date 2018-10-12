@@ -19,7 +19,7 @@ namespace org.kevinxing.socket
         private ArraySegment<byte> receiveBuffer;
         private ArraySegment<byte> dataBuffer;
         private int dataBufferOffset = 0;
-        public async Task StartClientAsync(string ip,int port)
+        public async Task ConnectAsync(string ip,int port)
         {
             try
             {
@@ -138,6 +138,11 @@ namespace org.kevinxing.socket
             int sendCount = await client.SendAsync(new ArraySegment<byte>(frameArr), SocketFlags.None);
             log(String.Format("Socket send {0}",
                     sendCount));
+        }
+
+        public void Disconnect()
+        {
+            client.Disconnect(true);
         }
         private void log(String msg)
         {
