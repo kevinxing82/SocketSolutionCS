@@ -28,7 +28,8 @@ namespace org.kevinxing.socket
 
         private  void connectButton_ClickAsync(object sender, EventArgs e)
         {
-            client.StartClientAsync();
+            
+            client.StartClientAsync(ipTextBox.Text, int.Parse(portTextBox.Text));
         }
 
         private void disconnectButton_Click(object sender, EventArgs e)

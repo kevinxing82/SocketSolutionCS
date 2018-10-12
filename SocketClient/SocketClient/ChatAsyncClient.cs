@@ -19,13 +19,20 @@ namespace org.kevinxing.socket
         private ArraySegment<byte> receiveBuffer;
         private ArraySegment<byte> dataBuffer;
         private int dataBufferOffset = 0;
-        public async Task StartClientAsync()
+        public async Task StartClientAsync(string ip,int port)
         {
             try
             {
-                IPHostEntry ipHostInfo = Dns.GetHostEntry("localhost");
-                IPAddress ipAddress = ipHostInfo.AddressList[0];
-                IPEndPoint remoteEP = new IPEndPoint(ipAddress, 9527);
+                IPHostEntry ipHostInfo = Dns.GetHostEntry(ip);
+                IPAddress ipAddress = IPAddress.Loopback;
+                for (int i=0;i<ipHostInfo.AddressList.Length;i++)
+                {
+                    if(ipHostInfo.AddressList[i].AddressFamily==AddressFamily.InterNetwork)
+                    {
+                        ipAddress = ipHostInfo.AddressList[i];
+                    }
+                }
+                IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
 
                 config = new SocketConfiguration();
                 receiveBuffer = new ArraySegment<byte>(new byte[config.ReceiveBufferSize]);

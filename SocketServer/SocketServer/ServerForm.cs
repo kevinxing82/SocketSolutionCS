@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -34,7 +35,17 @@ namespace org.kevinxing.socket
 
         private void startButton_Click(object sender, EventArgs e)
         {
-            IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
+            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName()); 
+            IPAddress ipAddress = IPAddress.Loopback;
+
+            for (int i = 0; i < ipHostInfo.AddressList.Length; i++)
+            {
+                if (ipHostInfo.AddressList[i].AddressFamily == AddressFamily.InterNetwork)
+                {
+                    ipAddress = ipHostInfo.AddressList[i];
+                }
+            }
+
             IPEndPoint ipLocalEndPoint = new IPEndPoint(ipAddress, 9527);
             server.Start(ipLocalEndPoint);
         }

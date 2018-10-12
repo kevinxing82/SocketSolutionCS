@@ -316,6 +316,7 @@ namespace org.kevinxing.socket
         private async Task HandleUserSideError(Exception ex)
         {
             //log
+            Console.WriteLine(ex.ToString());
             await Task.CompletedTask;
         }
         #endregion

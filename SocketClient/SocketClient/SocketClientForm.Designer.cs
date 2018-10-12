@@ -68,6 +68,7 @@
             this.ipTextBox.Name = "ipTextBox";
             this.ipTextBox.Size = new System.Drawing.Size(100, 23);
             this.ipTextBox.TabIndex = 2;
+            this.ipTextBox.Text = "127.0.0.1";
             this.ipTextBox.TextChanged += new System.EventHandler(this.ipTextBox_TextChanged);
             // 
             // portTextBox
@@ -77,6 +78,7 @@
             this.portTextBox.Name = "portTextBox";
             this.portTextBox.Size = new System.Drawing.Size(100, 23);
             this.portTextBox.TabIndex = 3;
+            this.portTextBox.Text = "9527";
             this.portTextBox.TextChanged += new System.EventHandler(this.portTextBox_TextChanged);
             // 
             // connectButton
