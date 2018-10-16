@@ -120,7 +120,10 @@ namespace org.kevinxing.socket
                 while(true)
                 {
                     Socket acceptSocket = await listenSocket.AcceptAsync();
-                    await ProcessAccept(acceptSocket);
+                    await Task.Factory.StartNew(async () =>
+                    {
+                        await ProcessAccept(acceptSocket);
+                    }, TaskCreationOptions.LongRunning);
                 }
             }
             catch (Exception ex) when (!ShouldThrow(ex)) { }

@@ -68,7 +68,7 @@ namespace org.kevinxing.socket
                 _socket = socket;
                 SetSocketOption();
 
-                _sessionKey = Guid.Empty.ToString();
+                _sessionKey = Guid.NewGuid().ToString();
 
                 _remoteEndPoint = this.RemoteEndPoint;
                 _localEndPoint     = this.LocalEndPoint;

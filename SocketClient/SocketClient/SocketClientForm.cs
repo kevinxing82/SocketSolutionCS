@@ -28,7 +28,6 @@ namespace org.kevinxing.socket
 
         private  void connectButton_ClickAsync(object sender, EventArgs e)
         {
-            
             client.ConnectAsync(ipTextBox.Text, int.Parse(portTextBox.Text));
         }
 
@@ -49,7 +48,7 @@ namespace org.kevinxing.socket
 
         private void sendButton_Click(object sender, EventArgs e)
         {
-            client.SendAsync("This is a test<EOF>");
+            client.SendAsync("This is a test");
         }
 
         private void ipTextBox_TextChanged(object sender, EventArgs e)

@@ -39,7 +39,21 @@ namespace org.kevinxing.socket
                 dataBuffer = new ArraySegment<byte>(new byte[config.ReceiveBufferSize * 2]);
                 client = new Socket(ipAddress.AddressFamily,
                     SocketType.Stream, ProtocolType.Tcp);
-                 await client.ConnectAsync(remoteEP);
+
+                IPHostEntry localHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+                IPAddress localAddress = IPAddress.Loopback;
+
+                for (int i = 0; i < localHostInfo.AddressList.Length; i++)
+                {
+                    if (localHostInfo.AddressList[i].AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        localAddress = localHostInfo.AddressList[i];
+                    }
+                }
+
+                IPEndPoint ipLocalEndPoint = new IPEndPoint(localAddress, getPort());
+                client.Bind(ipLocalEndPoint);
+                await client.ConnectAsync(remoteEP);
 
                 if(client.Connected)
                 {
@@ -173,6 +187,17 @@ namespace org.kevinxing.socket
             {
                 return false;
             }
+        }
+
+        private int getPort()
+        {
+            int port = 0;
+            Random r = new Random();
+            while(port < 1024)
+            {
+                port = r.Next(65535);
+            }
+            return port;
         }
     }
 }
